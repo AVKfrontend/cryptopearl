@@ -16,7 +16,8 @@
           <div class="mt-1 relative rounded-md shadow-md">
             <input
               v-model="tiker"
-              @keydown.enter="tikerAdd(tiker)"
+              @input="errReset()"
+              @keydown.enter="validateTiker(tiker)"
               type="text"
               name="wallet"
               id="wallet"
@@ -24,25 +25,40 @@
               placeholder="Например DOGE"
             />
           </div>
+          <template v-if="hint.length > 0">
+            <div class="flex bg-white shadow-md m-1 p-1 rounded-md shadow-md flex-wrap">
+              <span
+                v-for="t_hint in hint"
+                v-bind:key="t_hint"
+                v-on:click="validateTiker(t_hint)"
+                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
+              >
+                {{ t_hint }}
+              </span>
+            </div>
+          </template>
           <div class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap">
-            <span v-on:click="tikerAdd('BTN')" class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-              BTN
+            <span  class="inline-flex items-center px-2 m-1 text-xs font-medium text-gray-800">
+              Популярные:
             </span>
-            <span v-on:click="tikerAdd('DOGE')" class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
+            <span v-on:click="validateTiker('BTC')" class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
+              BTC
+            </span>
+            <span v-on:click="validateTiker('ETH')" class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
+              ETH
+            </span>
+            <span v-on:click="validateTiker('DOGE')" class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
               DOGE
             </span>
-            <span v-on:click="tikerAdd('BCH')" class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-              BCH
-            </span>
-            <span v-on:click="tikerAdd('CHD')" class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-              CHD
+            <span v-on:click="validateTiker('SOL')" class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
+              SOL
             </span>
           </div>
-          <div class="text-sm text-red-600">{{ errmes }}</div>
+          <p class="text-sm text-red-600">{{ errmes }}</p>
         </div>
       </div>
       <button
-        v-on:click="tikerAdd(tiker)"
+        v-on:click="validateTiker(tiker)"
         type="button"
         class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
       >
@@ -62,12 +78,60 @@
         Добавить
       </button>
     </section>
-    <template v-if="(tikers.length > 0)">
+    <template v-if="tikers.length > 0">
       <hr class="w-full border-t border-gray-600 my-4" />
+      <label for="filter" class="block text-sm font-medium text-gray-700"
+      >Выбрать содержащие</label>
+      <div class="mt-1 relative rounded-md shadow-md max-w-xs">
+        <input
+          v-model="filter"
+          type="text"
+          name="filter"
+          id="filter"
+          class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
+          placeholder="Введите часть тикера"
+        />
+      </div>
+      <button
+        v-if="page > 1"
+        v-on:click="page--"
+        class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+      >
+        Предыдущая
+      </button>
+      <span
+        v-if="pages > 1"
+        class="my-4 inline-flex items-center py-2 px-4 text-sm leading-4 font-medium text-black"
+      >
+        Страница {{ page }} из {{ pages }}
+      </span>
+      <button
+        v-if="page < pages"
+        v-on:click="page++"
+        class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+      >
+        Следующая
+      </button>
+      <div class="my-4 inline-flex items-center ml-3 max-w-xs">
+        <label for="tikerperpage" class="mr-3 text-sm font-medium text-gray-700"
+          >Выводить по</label>
+        <input
+          v-model="tikerPerPage"
+          type="number"
+          name="tikerperpage"
+          id="tikerperpage"
+          class="pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm shadow-md rounded-md"
+        />
+      </div>
+      <hr class="w-full border-t border-gray-600 my-4" />
+      <p
+        v-if="filtered.length === 0"
+        class="text-sm text-red-600"
+      >Нет тикеров отвечающих условию фильтрации</p>
       <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div
-          v-for="(card, ind) in tikers"
-          v-bind:key="ind"
+          v-for="card in pagedTikers"
+          v-bind:key="card.tname"
           @click="(active = card.tname, tiks = [])"
           :class="[active === card.tname ? 'border-4' : '']"
           class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
@@ -102,21 +166,21 @@
       </dl>
       <hr class="w-full border-t border-gray-600 my-4" />
     </template>
-    <template v-if="(active !== '')">
+    <template v-if="active !== ''">
       <section class="relative">
       <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
         {{active}} - USD
       </h3>
       <div class="flex items-end border-gray-600 border-b border-l h-64">
         <div
-          v-for="(tik, inx) in bars(tiks)"
+          v-for="(tik, inx) in bars"
           :key="inx"
           :style="{ height: `${tik}%` }"
           class="bg-purple-800 border w-10"
         ></div>
       </div>
       <button
-        @click="(active = '')"
+        @click="active = ''"
         type="button"
         class="absolute top-0 right-0"
       >
@@ -149,6 +213,7 @@
 </template>
 
 <script>
+let fullList = []
 
 export default {
   name: 'App',
@@ -156,79 +221,129 @@ export default {
     return {
       tiker: '',
       tikers: [],
-      // err: false,
       errmes: ' ',
       active: '',
       tiks: [],
-      normBars: [],
-      prompt: []
+      filter: '',
+      page: 1,
+      tikerPerPage: 3
     }
   },
+
+  computed: {
+    pages () {
+      return this.filtered.length === 0 ? 1 : Math.ceil(this.filtered.length / this.tikerPerPage)
+    },
+    filtered () {
+      return this.tikers.filter(el => el.tname.includes(this.filter.toUpperCase()))
+    },
+    pagedTikers () {
+      const st = (this.page - 1) * this.tikerPerPage
+      return this.filtered.slice(st, st + this.tikerPerPage)
+    },
+    hint () {
+      const t = this.tiker === '' ? ' ' : this.tiker.toUpperCase()
+      return fullList.filter(el => el.startsWith(t)).slice(0, 4)
+    },
+    bars () {
+      const arr = this.tiks
+      const maxEl = Math.max(...arr)
+      const minEl = Math.min(...arr)
+      return maxEl === minEl ? arr.map(el => 50) : arr.map(el => 5 + (el - minEl) * 90 / (maxEl - minEl))
+    },
+    tikersListParam () {
+      return { filter: this.filter, page: this.page }
+    }
+  },
+
   methods: {
     errReset: function () {
-      this.errmes = ' '
+      if (this.errmes !== ' ') this.errmes = ' '
     },
-    tikerAdd: function (t) {
+    validateTiker (t) {
+      this.errReset()
+      t = t.toUpperCase()
       if (this.tikers.filter(el => el.tname === t).length === 0) {
-        if (!(t === '')) {
-          t = { tname: t, price: '0' }
-          this.tikers.unshift(t)
-          const url = `https://min-api.cryptocompare.com/data/price?fsym=${t.tname}&tsyms=USD&api_key={832618b174de4f9d1f3af9bff9522282d9a2ddf35167de1f620dc8a9ca7875c7}`
-          setTimeout(
-            async () => {
-              const resp = await fetch(url)
-              let resPrice = await resp.json()
-              resPrice = await resPrice.USD > 1 ? resPrice.USD.toFixed(2) : resPrice.USD.toPrecision(3)
-              this.tikers.find(el => el.tname === t.tname).price = resPrice
-              if (t.tname === this.active) {
-                this.tiks.push(resPrice)
-                if (this.tiks.lenght > 250) this.tiks.shift()
-                // this.normBars = this.bars(this.tiks)
-              }
-            }
-            , 5000
-          )
-          this.tiker = ''
+        if ((fullList.filter(el => el === t).length !== 0)) {
+          this.tikerAdd(t)
         } else {
-          this.errmes = 'Введите тикер токена'
-          setTimeout(this.errReset, 1000)
+          this.errmes = 'Нет данных про такую монету'
         }
       } else {
+        this.tiker = t
         this.errmes = 'Такой тикер уже добавлен'
-        console.log(this.errmes)
-        setTimeout(this.errReset, 1000)
       }
+    },
+    getTikerPrice (t) {
+      const url = `https://min-api.cryptocompare.com/data/price?fsym=${t.tname}&tsyms=USD&api_key={832618b174de4f9d1f3af9bff9522282d9a2ddf35167de1f620dc8a9ca7875c7}`
+      const getPrice = setInterval(
+        async () => {
+          const resp = await fetch(url)
+          let resPrice = await resp.json()
+          resPrice = await resPrice.USD > 1 ? resPrice.USD.toFixed(2) : resPrice.USD.toPrecision(3)
+          const coin = this.tikers.find(el => el.tname === t.tname)
+          coin ? coin.price = resPrice : clearInterval(getPrice)
+          if (t.tname === this.active) {
+            this.tiks.push(resPrice)
+            if (this.tiks.lenght > 250) this.tiks.shift()
+          }
+        }
+        , 5000
+      )
+    },
+    tikerAdd: function (t) {
+      t = { tname: t, price: '-' }
+      this.tikers = [t].concat(this.tikers)
+      this.getTikerPrice(t)
+      this.tiker = ''
+      this.page = 1
     },
     tikerDel: function (t) {
       this.tikers = this.tikers.filter(el => el !== t)
       if (t.tname === this.active) this.active = ''
-    },
-    bars: function (arr) {
-      const maxEl = Math.max(...arr)
-      const minEl = Math.min(...arr)
-      console.log(maxEl)
-      console.log(minEl)
-      return arr.map(el => (el / minEl) * 100 / (maxEl / minEl))
     }
   },
+
+  watch: {
+    pages () {
+      if (this.page > this.pages) this.page = this.pages
+    },
+    tikersListParam (obj) {
+      history.replaceState(null, 'params', (new URL(document.URL)).pathname + `?filter=${obj.filter}&page=${obj.page}`)
+    },
+    tikers () {
+      sessionStorage.setItem('tikersList', JSON.stringify(this.tikers))
+    }
+  },
+
   components: {
 
   },
+
+  created () {
+    const tikersList = sessionStorage.getItem('tikersList')
+    if (tikersList) {
+      this.tikers = JSON.parse(tikersList)
+      this.tikers.forEach(el => this.getTikerPrice(el))
+    }
+    for (const param of (new URL(document.URL)).searchParams.entries()) {
+      if (param[0] === 'filter') this.filter = param[1]
+      if (param[0] === 'page') this.page = param[1]
+    }
+  },
+
   mounted () {
-    let fullData = 0
-    const fullList = []
     setTimeout(
       async () => {
         const res = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true')
-        fullData = await res.json()
-        fullData = await fullData.Data
-        console.log(fullData)
-        // for (const obj of fullData) {
-        //   fullList.push(obj.Symbol)
-        // }
-        console.log(fullList)
+        fullList = await res.json()
+        fullList = Object.keys(fullList.Data).sort()
       }
-      , 0)
+      , 0
+    )
+  },
+
+  beforeUnmount () {
   }
 }
 </script>
