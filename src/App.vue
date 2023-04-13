@@ -141,7 +141,7 @@
               {{ card.tname }} - USD
             </dt>
             <dd class="mt-1 text-3xl font-semibold text-gray-900">
-              {{ card.price }}
+              {{ normalisePrice (card.price) }}
             </dd>
           </div>
           <div class="w-full border-t border-gray-200"></div>
@@ -213,6 +213,9 @@
 </template>
 
 <script>
+import { getCoinList } from './coinlist.js'
+import { subscribeToPrice, unSubscribe } from './api'
+
 let fullList = []
 
 export default {
@@ -260,6 +263,9 @@ export default {
     errReset: function () {
       if (this.errmes !== ' ') this.errmes = ' '
     },
+    normalisePrice (price) {
+      return price === '-' ? '-' : price > 1 ? price.toFixed(2) : price.toPrecision(3)
+    },
     validateTiker (t) {
       this.errReset()
       t = t.toUpperCase()
@@ -274,33 +280,51 @@ export default {
         this.errmes = 'Такой тикер уже добавлен'
       }
     },
-    getTikerPrice (t) {
-      const url = `https://min-api.cryptocompare.com/data/price?fsym=${t.tname}&tsyms=USD&api_key={832618b174de4f9d1f3af9bff9522282d9a2ddf35167de1f620dc8a9ca7875c7}`
-      const getPrice = setInterval(
-        async () => {
-          const resp = await fetch(url)
-          let resPrice = await resp.json()
-          resPrice = await resPrice.USD > 1 ? resPrice.USD.toFixed(2) : resPrice.USD.toPrecision(3)
-          const coin = this.tikers.find(el => el.tname === t.tname)
-          coin ? coin.price = resPrice : clearInterval(getPrice)
-          if (t.tname === this.active) {
-            this.tiks.push(resPrice)
-            if (this.tiks.lenght > 250) this.tiks.shift()
-          }
-        }
-        , 5000
-      )
+    // getTikerPrice (t) {
+    //   const KEY = '832618b174de4f9d1f3af9bff9522282d9a2ddf35167de1f620dc8a9ca7875c7'
+    //   const url = `https://min-api.cryptocompare.com/data/price?fsym=${t.tname}&tsyms=USD&api_key={${KEY}}`
+    //   const getPrice = setInterval(
+    //     async () => {
+    //       const coin = this.tikers.find(el => el.tname === t.tname)
+    //       if (coin) {
+    //         const resp = await fetch(url)
+    //         let resPrice = await resp.json()
+    //         resPrice = resPrice.USD
+    //         t.price = resPrice
+    //         this.handlerNewPrice(t)
+    //       } else clearInterval(getPrice)
+    //     }
+    //     , 5000
+    //   )
+    // },
+    handlerNewPrice (t, price) {
+      const coin = this.tikers.find(el => el.tname === t)
+      coin.price = price
+      if (t === this.active) {
+        this.tiks.push(price)
+        if (this.tiks.lenght > 250) this.tiks.shift()
+      }
     },
+    // handlerNewPrice (t) {
+    //   const coin = this.tikers.find(el => el.tname === t.tname)
+    //   coin.price = t.price
+    //   if (t.tname === this.active) {
+    //     this.tiks.push(t.price)
+    //     if (this.tiks.lenght > 250) this.tiks.shift()
+    //   }
+    // },
     tikerAdd: function (t) {
       t = { tname: t, price: '-' }
       this.tikers = [t].concat(this.tikers)
-      this.getTikerPrice(t)
+      // this.getTikerPrice(t)
+      subscribeToPrice(t.tname, this.handlerNewPrice)
       this.tiker = ''
       this.page = 1
     },
     tikerDel: function (t) {
       this.tikers = this.tikers.filter(el => el !== t)
       if (t.tname === this.active) this.active = ''
+      unSubscribe(t.tname)
     }
   },
 
@@ -333,14 +357,9 @@ export default {
   },
 
   mounted () {
-    setTimeout(
-      async () => {
-        const res = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true')
-        fullList = await res.json()
-        fullList = Object.keys(fullList.Data).sort()
-      }
-      , 0
-    )
+    (async () => {
+      fullList = await getCoinList()
+    })()
   },
 
   beforeUnmount () {
