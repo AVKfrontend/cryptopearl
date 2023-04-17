@@ -1,29 +1,43 @@
 const subscriptionList = {}
+const subscriptionChannel = '5~CCCAGG~'
+const KEY = 'ff22f3e7002848a426b497013ca0accce8dca58176a61a63c9562b81093a4c2d'
+const url = `wss://streamer.cryptocompare.com/v2?api_key=${KEY}`
+
+const wsconnection = new WebSocket(url)
+
+function sendMessageToWS (action, coin) {
+  const message = {}
+  message.action = action
+  message.subs = [`${subscriptionChannel}${coin}~USD`]
+  const messageToSend = JSON.stringify(message)
+  if (wsconnection.readyState === WebSocket.OPEN) {
+    wsconnection.send(messageToSend)
+    return
+  }
+  wsconnection.addEventListener('open', () => {
+    wsconnection.send(JSON.stringify(message))
+  },
+  { once: true })
+}
+if (wsconnection) {
+  wsconnection.onmessage = (messageFromWS) => {
+    messageFromWS = JSON.parse(messageFromWS.data)
+    if (messageFromWS.TYPE !== subscriptionChannel[0] || !messageFromWS.PRICE) return
+    const coinToEdit = messageFromWS.FROMSYMBOL
+    const newPrice = messageFromWS.PRICE
+    subscriptionList[coinToEdit](coinToEdit, newPrice)
+  }
+}
 
 function subscribeToPrice (coin, collback) {
   subscriptionList[coin] = collback
-  getTikerPrice(coin)
+  const action = 'SubAdd'
+  sendMessageToWS(action, coin)
 }
-function unSubscribe (coin) {
-  delete subscriptionList[coin]
-}
-
-function getTikerPrice (t) {
-  const KEY = '832618b174de4f9d1f3af9bff9522282d9a2ddf35167de1f620dc8a9ca7875c7'
-  const url = `https://min-api.cryptocompare.com/data/price?fsym=${t}&tsyms=USD&api_key={${KEY}}`
-
-  const getPrice = setInterval(
-    async () => {
-      if (subscriptionList[t]) {
-        const resp = await fetch(url)
-        let resPrice = await resp.json()
-        resPrice = resPrice.USD
-        console.log(`${t}: ${resPrice}`)
-        subscriptionList[t](t, resPrice)
-      } else clearInterval(getPrice)
-    }
-    , 5000
-  )
+function unSubscribe (coinToRemove) {
+  const action = 'SubRemove'
+  sendMessageToWS(action, coinToRemove)
+  delete subscriptionList[coinToRemove]
 }
 
 export { subscribeToPrice, unSubscribe }

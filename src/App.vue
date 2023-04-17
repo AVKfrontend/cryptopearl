@@ -259,6 +259,24 @@ export default {
     }
   },
 
+  created () {
+    const tikersList = sessionStorage.getItem('tikersList')
+    if (tikersList) {
+      this.tikers = JSON.parse(tikersList)
+      this.tikers.forEach(el => subscribeToPrice(el.tname, this.handlerNewPrice))
+    }
+    for (const param of (new URL(document.URL)).searchParams.entries()) {
+      if (param[0] === 'filter') this.filter = param[1]
+      if (param[0] === 'page') this.page = param[1]
+    }
+  },
+
+  mounted () {
+    (async () => {
+      fullList = await getCoinList()
+    })()
+  },
+
   methods: {
     errReset: function () {
       if (this.errmes !== ' ') this.errmes = ' '
@@ -280,43 +298,17 @@ export default {
         this.errmes = 'Такой тикер уже добавлен'
       }
     },
-    // getTikerPrice (t) {
-    //   const KEY = '832618b174de4f9d1f3af9bff9522282d9a2ddf35167de1f620dc8a9ca7875c7'
-    //   const url = `https://min-api.cryptocompare.com/data/price?fsym=${t.tname}&tsyms=USD&api_key={${KEY}}`
-    //   const getPrice = setInterval(
-    //     async () => {
-    //       const coin = this.tikers.find(el => el.tname === t.tname)
-    //       if (coin) {
-    //         const resp = await fetch(url)
-    //         let resPrice = await resp.json()
-    //         resPrice = resPrice.USD
-    //         t.price = resPrice
-    //         this.handlerNewPrice(t)
-    //       } else clearInterval(getPrice)
-    //     }
-    //     , 5000
-    //   )
-    // },
     handlerNewPrice (t, price) {
       const coin = this.tikers.find(el => el.tname === t)
       coin.price = price
       if (t === this.active) {
         this.tiks.push(price)
-        if (this.tiks.lenght > 250) this.tiks.shift()
+        if (this.tiks.lenght > 100) this.tiks.shift()
       }
     },
-    // handlerNewPrice (t) {
-    //   const coin = this.tikers.find(el => el.tname === t.tname)
-    //   coin.price = t.price
-    //   if (t.tname === this.active) {
-    //     this.tiks.push(t.price)
-    //     if (this.tiks.lenght > 250) this.tiks.shift()
-    //   }
-    // },
     tikerAdd: function (t) {
       t = { tname: t, price: '-' }
       this.tikers = [t].concat(this.tikers)
-      // this.getTikerPrice(t)
       subscribeToPrice(t.tname, this.handlerNewPrice)
       this.tiker = ''
       this.page = 1
@@ -342,24 +334,6 @@ export default {
 
   components: {
 
-  },
-
-  created () {
-    const tikersList = sessionStorage.getItem('tikersList')
-    if (tikersList) {
-      this.tikers = JSON.parse(tikersList)
-      this.tikers.forEach(el => this.getTikerPrice(el))
-    }
-    for (const param of (new URL(document.URL)).searchParams.entries()) {
-      if (param[0] === 'filter') this.filter = param[1]
-      if (param[0] === 'page') this.page = param[1]
-    }
-  },
-
-  mounted () {
-    (async () => {
-      fullList = await getCoinList()
-    })()
   },
 
   beforeUnmount () {
