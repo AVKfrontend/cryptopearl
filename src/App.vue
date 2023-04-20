@@ -134,9 +134,12 @@
           v-bind:key="card.tname"
           @click="(active = card.tname, tiks = [])"
           :class="[active === card.tname ? 'border-4' : '']"
-          class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
+          class="overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
         >
-          <div class="px-4 py-5 sm:p-6 text-center">
+          <div
+          :class="[card.price === ' - ' ? 'bg-red-100' : 'bg-white']"
+          class="px-4 py-5 sm:p-6 text-center"
+          >
             <dt class="text-sm font-medium text-gray-500 truncate">
               {{ card.tname }} - USD
             </dt>
@@ -282,7 +285,7 @@ export default {
       if (this.errmes !== ' ') this.errmes = ' '
     },
     normalisePrice (price) {
-      return price === '-' ? '-' : price > 1 ? price.toFixed(2) : price.toPrecision(3)
+      return !Number.isFinite(price) ? price : price > 1 ? price.toFixed(2) : price.toPrecision(3)
     },
     validateTiker (t) {
       this.errReset()
@@ -300,7 +303,7 @@ export default {
     },
     handlerNewPrice (t, price) {
       const coin = this.tikers.find(el => el.tname === t)
-      coin.price = price
+      coin.price = price ?? ' - '
       if (t === this.active) {
         this.tiks.push(price)
         if (this.tiks.lenght > 100) this.tiks.shift()
