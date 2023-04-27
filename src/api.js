@@ -1,32 +1,36 @@
-import { workerFN } from './websocketworker'
-
 const subscriptionList = {}
 const subscriptionCrosList = {}
-let BTCUSD, workerURL, wsworker
+let BTCUSD
+const subscriptionChannel = '5~CCCAGG~'
+const KEY = 'ff22f3e7002848a426b497013ca0accce8dca58176a61a63c9562b81093a4c2d'
+const url = `wss://streamer.cryptocompare.com/v2?api_key=${KEY}`
 
-sharedWorkerCreate()
-// workerURL = localStorage.getItem('workerURL')
-// if (workerURL) {
-//   console.log(workerURL)
-//   workerURL = JSON.parse(workerURL)
-//   wsworker = new SharedWorker(workerURL)
-// } else sharedWorkerCreate()
-function sharedWorkerCreate () {
-  let workerCode = workerFN.toString()
-  workerCode = workerCode.slice(workerCode.indexOf('{') + 1, workerCode.lastIndexOf('}'))
-  const workerBlob = new Blob([workerCode], { type: 'application/javascript' })
-  workerURL = URL.createObjectURL(workerBlob)
-  console.log(workerBlob)
-  // localStorage.setItem('workerURL', JSON.stringify(workerURL))
-  wsworker = new SharedWorker(workerURL)
-  console.log(JSON.stringify(workerBlob))
+const wsconnection = new WebSocket(url)
+
+function sendMessageToWS (action, coin, toCoin) {
+  const message = {}
+  message.action = action
+  message.subs = [`${subscriptionChannel}${coin}~${toCoin}`]
+  const messageToSend = JSON.stringify(message)
+  if (wsconnection.readyState === WebSocket.OPEN) {
+    wsconnection.send(messageToSend)
+    return
+  }
+  wsconnection.addEventListener('open', () => {
+    wsconnection.send(messageToSend)
+  },
+  { once: true })
 }
-
-wsworker.port.onmessage = function hendlerMessage (messageFromWorker) {
-  const messageFromWS = messageFromWorker.data
-  const messageType = messageFromWS.TYPE
-  if (messageType === '500' && messageFromWS.MESSAGE === 'INVALID_SUB') hendlerMessage500(messageFromWS)
-  if (messageType !== '5' || !messageFromWS.PRICE) return
+if (wsconnection) {
+  wsconnection.onmessage = (messageFromWS) => {
+    messageFromWS = JSON.parse(messageFromWS.data)
+    console.log(messageFromWS)
+    hendlerMessage(messageFromWS)
+  }
+}
+function hendlerMessage (messageFromWS) {
+  if (messageFromWS.TYPE === '500' && messageFromWS.MESSAGE === 'INVALID_SUB') hendlerMessage500(messageFromWS)
+  if (messageFromWS.TYPE !== subscriptionChannel[0] || !messageFromWS.PRICE) return
   const coinToEdit = messageFromWS.FROMSYMBOL
   const coinPair = messageFromWS.TOSYMBOL
   const newPrice = messageFromWS.PRICE
@@ -53,20 +57,20 @@ function hendlerMessage500 (message) {
   if (toChange === 'USD') subscribeToCross(fromChange)
 }
 function subscribeToCross (coin) {
-  if (Object.keys(subscriptionCrosList).length === 0 && !subscriptionList.BTC) sendMessageToWorker(['SubAdd', 'BTC', 'USD'])
+  if (Object.keys(subscriptionCrosList).length === 0 && !subscriptionList.BTC) sendMessageToWS('SubAdd', 'BTC', 'USD')
   subscriptionCrosList[coin] = '-'
   const action = 'SubAdd'
-  sendMessageToWorker([action, coin, 'BTC'])
+  sendMessageToWS(action, coin, 'BTC')
 }
 
 function returnNewPriceToApp (coin, newPrice) {
-  subscriptionList[coin]?.(coin, newPrice)
+  subscriptionList[coin](coin, newPrice)
 }
 function subscribeToPrice (coin, collback) {
   subscriptionList[coin] = collback
   if (Object.keys(subscriptionCrosList).length !== 0 && coin === 'BTC') return
   const action = 'SubAdd'
-  sendMessageToWorker([action, coin, 'USD'])
+  sendMessageToWS(action, coin, 'USD')
 }
 function unSubscribe (coinToRemove) {
   const action = 'SubRemove'
@@ -76,13 +80,10 @@ function unSubscribe (coinToRemove) {
   if (lastCrosPrice) {
     coinPair = 'BTC'
     delete subscriptionCrosList[coinToRemove]
-    if (Object.keys(subscriptionCrosList).length === 0 && !subscriptionList.BTC) sendMessageToWorker(['SubRemove', 'BTC', 'USD'])
+    if (Object.keys(subscriptionCrosList).length === 0 && !subscriptionList.BTC) sendMessageToWS('SubRemove', 'BTC', 'USD')
     if (lastCrosPrice === '-') return
   }
-  sendMessageToWorker([action, coinToRemove, coinPair])
-}
-function sendMessageToWorker (message) {
-  wsworker.port.postMessage(message)
+  sendMessageToWS(action, coinToRemove, coinPair)
 }
 
 export { subscribeToPrice, unSubscribe }
