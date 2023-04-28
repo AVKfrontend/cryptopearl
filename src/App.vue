@@ -18,6 +18,7 @@
               v-model="tiker"
               @input="errReset()"
               @keydown.enter="validateTiker(tiker)"
+              ref="tikerInput"
               type="text"
               name="wallet"
               id="wallet"
@@ -179,6 +180,7 @@
           v-for="(tik, inx) in bars"
           :key="inx"
           :style="{ height: `${tik}%` }"
+          ref="diagram"
           class="bg-purple-800 border w-10"
         ></div>
       </div>
@@ -230,6 +232,7 @@ export default {
       errmes: ' ',
       active: '',
       tiks: [],
+      diagramMaxElements: 1,
       filter: '',
       page: 1,
       tikerPerPage: 3
@@ -252,7 +255,7 @@ export default {
       return fullList.filter(el => el.startsWith(t)).slice(0, 4)
     },
     bars () {
-      const arr = this.tiks
+      const arr = this.tiks.slice(-Math.floor(this.diagramMaxElements))
       const maxEl = Math.max(...arr)
       const minEl = Math.min(...arr)
       return maxEl === minEl ? arr.map(el => 50) : arr.map(el => 5 + (el - minEl) * 90 / (maxEl - minEl))
@@ -278,9 +281,14 @@ export default {
     (async () => {
       fullList = await getCoinList()
     })()
+    setTimeout(this.focusOnInput, 1500)
+    window.addEventListener('resize', this.culculateDiagramMaxElements)
   },
 
   methods: {
+    focusOnInput () {
+      this.$refs.tikerInput.focus()
+    },
     errReset: function () {
       if (this.errmes !== ' ') this.errmes = ' '
     },
@@ -306,8 +314,14 @@ export default {
       coin.price = price ?? ' - '
       if (t === this.active) {
         this.tiks.push(price)
-        if (this.tiks.lenght > 100) this.tiks.shift()
+        if (this.tiks.length === 2) this.culculateDiagramMaxElements()
       }
+    },
+    culculateDiagramMaxElements () {
+      if (!this.tiks.length) return
+      const diagramWidth = this.$refs.diagram[0].parentElement.clientWidth
+      const diagramElementWidth = this.$refs.diagram[0].offsetWidth
+      this.diagramMaxElements = diagramWidth / diagramElementWidth
     },
     tikerAdd: function (t) {
       t = { tname: t, price: '-' }
@@ -320,6 +334,7 @@ export default {
       this.tikers = this.tikers.filter(el => el !== t)
       if (t.tname === this.active) this.active = ''
       unSubscribe(t.tname)
+      if (this.tikers.length === 0) this.focusOnInput()
     }
   },
 
@@ -340,6 +355,7 @@ export default {
   },
 
   beforeUnmount () {
+    window.removeEventListener('resize', this.culculateDiagramMaxElements)
   }
 }
 </script>
