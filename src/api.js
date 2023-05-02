@@ -1,32 +1,19 @@
-import { workerFN } from './websocketworker'
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import Worker from 'worker-loader!./websocketworker'
 
 const subscriptionList = {}
 const subscriptionCrosList = {}
-let BTCUSD, workerURL, wsworker
+let BTCUSD
 
-sharedWorkerCreate()
-// workerURL = localStorage.getItem('workerURL')
-// if (workerURL) {
-//   console.log(workerURL)
-//   workerURL = JSON.parse(workerURL)
-//   wsworker = new SharedWorker(workerURL)
-// } else sharedWorkerCreate()
-function sharedWorkerCreate () {
-  let workerCode = workerFN.toString()
-  workerCode = workerCode.slice(workerCode.indexOf('{') + 1, workerCode.lastIndexOf('}'))
-  const workerBlob = new Blob([workerCode], { type: 'application/javascript' })
-  workerURL = URL.createObjectURL(workerBlob)
-  console.log(workerBlob)
-  // localStorage.setItem('workerURL', JSON.stringify(workerURL))
-  wsworker = new SharedWorker(workerURL)
-  console.log(JSON.stringify(workerBlob))
-}
+const wsworker = new Worker()
 
-wsworker.port.onmessage = function hendlerMessage (messageFromWorker) {
+// wsworker.port.onmessage = (messageFromWorker) => {
+wsworker.onmessage = (messageFromWorker) => {
   const messageFromWS = messageFromWorker.data
-  const messageType = messageFromWS.TYPE
-  if (messageType === '500' && messageFromWS.MESSAGE === 'INVALID_SUB') hendlerMessage500(messageFromWS)
-  if (messageType !== '5' || !messageFromWS.PRICE) return
+  messageFromWS.TYPE === '500' && messageFromWS.MESSAGE === 'INVALID_SUB' ? hendlerMessage500(messageFromWS) : hendlerMessage(messageFromWS)
+}
+function hendlerMessage (messageFromWS) {
+  if (messageFromWS.TYPE !== '5' || !messageFromWS.PRICE) return
   const coinToEdit = messageFromWS.FROMSYMBOL
   const coinPair = messageFromWS.TOSYMBOL
   const newPrice = messageFromWS.PRICE
@@ -82,7 +69,8 @@ function unSubscribe (coinToRemove) {
   sendMessageToWorker([action, coinToRemove, coinPair])
 }
 function sendMessageToWorker (message) {
-  wsworker.port.postMessage(message)
+  wsworker.postMessage(message)
+  // wsworker.port.postMessage(message)
 }
 
 export { subscribeToPrice, unSubscribe }
