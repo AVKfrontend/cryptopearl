@@ -220,8 +220,10 @@
 <script>
 import { getCoinList } from './coinlist.js'
 import { subscribeToPrice, unSubscribe } from './api'
+import { nextTick } from 'vue'
 
 let fullList = []
+let diagramElementWidth
 
 export default {
   name: 'App',
@@ -232,7 +234,7 @@ export default {
       errmes: ' ',
       active: '',
       tiks: [],
-      diagramMaxElements: 1,
+      diagramMaxElements: 0,
       filter: '',
       page: 1,
       tikerPerPage: 3
@@ -314,14 +316,17 @@ export default {
       coin.price = price ?? ' - '
       if (t === this.active) {
         this.tiks.push(price)
-        if (this.tiks.length === 2) this.culculateDiagramMaxElements()
+        if (this.diagramMaxElements === 0) nextTick(() => { this.culculateDiagramMaxElements() })
       }
     },
     culculateDiagramMaxElements () {
       if (!this.tiks.length) return
       const diagramWidth = this.$refs.diagram[0].parentElement.clientWidth
-      const diagramElementWidth = this.$refs.diagram[0].offsetWidth
-      this.diagramMaxElements = diagramWidth / diagramElementWidth
+      this.diagramMaxElements = diagramWidth / (diagramElementWidth ?? this.getdiagramElementWidth())
+    },
+    getdiagramElementWidth () {
+      diagramElementWidth = this.$refs.diagram[0].offsetWidth
+      return diagramElementWidth
     },
     tikerAdd: function (t) {
       t = { tname: t, price: '-' }
