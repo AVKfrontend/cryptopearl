@@ -1,36 +1,19 @@
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import Worker from 'worker-loader!./websocketworker'
+
 const subscriptionList = {}
 const subscriptionCrosList = {}
 let BTCUSD
-const subscriptionChannel = '5~CCCAGG~'
-const KEY = 'ff22f3e7002848a426b497013ca0accce8dca58176a61a63c9562b81093a4c2d'
-const url = `wss://streamer.cryptocompare.com/v2?api_key=${KEY}`
 
-const wsconnection = new WebSocket(url)
+const wsworker = new Worker()
 
-function sendMessageToWS (action, coin, toCoin) {
-  const message = {}
-  message.action = action
-  message.subs = [`${subscriptionChannel}${coin}~${toCoin}`]
-  const messageToSend = JSON.stringify(message)
-  if (wsconnection.readyState === WebSocket.OPEN) {
-    wsconnection.send(messageToSend)
-    return
-  }
-  wsconnection.addEventListener('open', () => {
-    wsconnection.send(messageToSend)
-  },
-  { once: true })
-}
-if (wsconnection) {
-  wsconnection.onmessage = (messageFromWS) => {
-    messageFromWS = JSON.parse(messageFromWS.data)
-    console.log(messageFromWS)
-    hendlerMessage(messageFromWS)
-  }
+// wsworker.port.onmessage = (messageFromWorker) => {
+wsworker.onmessage = (messageFromWorker) => {
+  const messageFromWS = messageFromWorker.data
+  messageFromWS.TYPE === '500' && messageFromWS.MESSAGE === 'INVALID_SUB' ? hendlerMessage500(messageFromWS) : hendlerMessage(messageFromWS)
 }
 function hendlerMessage (messageFromWS) {
-  if (messageFromWS.TYPE === '500' && messageFromWS.MESSAGE === 'INVALID_SUB') hendlerMessage500(messageFromWS)
-  if (messageFromWS.TYPE !== subscriptionChannel[0] || !messageFromWS.PRICE) return
+  if (messageFromWS.TYPE !== '5' || !messageFromWS.PRICE) return
   const coinToEdit = messageFromWS.FROMSYMBOL
   const coinPair = messageFromWS.TOSYMBOL
   const newPrice = messageFromWS.PRICE
@@ -57,10 +40,10 @@ function hendlerMessage500 (message) {
   if (toChange === 'USD') subscribeToCross(fromChange)
 }
 function subscribeToCross (coin) {
-  if (Object.keys(subscriptionCrosList).length === 0 && !subscriptionList.BTC) sendMessageToWS('SubAdd', 'BTC', 'USD')
+  if (Object.keys(subscriptionCrosList).length === 0 && !subscriptionList.BTC) sendMessageToWorker(['SubAdd', 'BTC', 'USD'])
   subscriptionCrosList[coin] = '-'
   const action = 'SubAdd'
-  sendMessageToWS(action, coin, 'BTC')
+  sendMessageToWorker([action, coin, 'BTC'])
 }
 
 function returnNewPriceToApp (coin, newPrice) {
@@ -70,7 +53,7 @@ function subscribeToPrice (coin, collback) {
   subscriptionList[coin] = collback
   if (Object.keys(subscriptionCrosList).length !== 0 && coin === 'BTC') return
   const action = 'SubAdd'
-  sendMessageToWS(action, coin, 'USD')
+  sendMessageToWorker([action, coin, 'USD'])
 }
 function unSubscribe (coinToRemove) {
   const action = 'SubRemove'
@@ -80,10 +63,14 @@ function unSubscribe (coinToRemove) {
   if (lastCrosPrice) {
     coinPair = 'BTC'
     delete subscriptionCrosList[coinToRemove]
-    if (Object.keys(subscriptionCrosList).length === 0 && !subscriptionList.BTC) sendMessageToWS('SubRemove', 'BTC', 'USD')
+    if (Object.keys(subscriptionCrosList).length === 0 && !subscriptionList.BTC) sendMessageToWorker(['SubRemove', 'BTC', 'USD'])
     if (lastCrosPrice === '-') return
   }
-  sendMessageToWS(action, coinToRemove, coinPair)
+  sendMessageToWorker([action, coinToRemove, coinPair])
+}
+function sendMessageToWorker (message) {
+  wsworker.postMessage(message)
+  // wsworker.port.postMessage(message)
 }
 
 export { subscribeToPrice, unSubscribe }
