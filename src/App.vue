@@ -88,60 +88,38 @@
       </dl>
       <hr class="w-full border-t border-gray-600 my-4" />
     </template>
-    <template v-if="active !== ''">
-      <section class="relative">
-      <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-        {{active}} - USD
-      </h3>
-      <div class="flex items-end border-gray-600 border-b border-l h-64">
-        <div
-          v-for="(tik, inx) in bars"
-          :key="inx"
-          :style="{ height: `${tik}%` }"
-          ref="diagram"
-          class="bg-purple-800 border w-10"
-        ></div>
-      </div>
-      <button
-        @click="active = ''"
-        type="button"
-        class="absolute top-0 right-0"
-      >
-        <DellSvg/>
-      </button>
-      </section>
-    </template>
+    <DrawDiagram
+      :active = "active"
+      :tiks = "tiks"
+      @active-del="active = ''"
+    />
   </div>
 </div>
 </template>
 
 <script>
 import { subscribeToPrice, unSubscribe } from './api'
-import { nextTick } from 'vue'
 import AddTiker from './components/modules/tiker-choice.vue'
 import BasketSvg from './components/atoms/busket_svg.vue'
-import DellSvg from './components/atoms/del_svg.vue'
-
-let diagramElementWidth
+import DrawDiagram from './components/modules/draw-diagram.vue'
 
 export default {
   name: 'App',
   data () {
     return {
       tikers: [],
-      active: '',
-      tiks: [],
-      diagramMaxElements: 0,
       filter: '',
       page: 1,
-      tikerPerPage: 3
+      tikerPerPage: 3,
+      active: '',
+      tiks: []
     }
   },
 
   components: {
     BasketSvg,
-    DellSvg,
-    AddTiker
+    AddTiker,
+    DrawDiagram
   },
 
   computed: {
@@ -154,12 +132,6 @@ export default {
     pagedTikers () {
       const st = (this.page - 1) * this.tikerPerPage
       return this.filtered.slice(st, st + this.tikerPerPage)
-    },
-    bars () {
-      const arr = this.tiks.slice(-Math.floor(this.diagramMaxElements))
-      const maxEl = Math.max(...arr)
-      const minEl = Math.min(...arr)
-      return maxEl === minEl ? arr.map(el => 50) : arr.map(el => 5 + (el - minEl) * 90 / (maxEl - minEl))
     },
     tikersListParam () {
       return { filter: this.filter, page: this.page }
@@ -179,7 +151,6 @@ export default {
   },
 
   mounted () {
-    window.addEventListener('resize', this.culculateDiagramMaxElements)
   },
 
   methods: {
@@ -191,17 +162,7 @@ export default {
       coin.price = price ?? ' - '
       if (t === this.active) {
         this.tiks.push(price)
-        if (this.diagramMaxElements === 0) nextTick(() => { this.culculateDiagramMaxElements() })
       }
-    },
-    culculateDiagramMaxElements () {
-      if (!this.tiks.length) return
-      const diagramWidth = this.$refs.diagram[0].parentElement.clientWidth
-      this.diagramMaxElements = diagramWidth / (diagramElementWidth ?? this.getdiagramElementWidth())
-    },
-    getdiagramElementWidth () {
-      diagramElementWidth = this.$refs.diagram[0].offsetWidth
-      return diagramElementWidth
     },
     tikerAdd: function (t) {
       t = { tname: t, price: '-' }
@@ -229,7 +190,6 @@ export default {
   },
 
   beforeUnmount () {
-    window.removeEventListener('resize', this.culculateDiagramMaxElements)
   }
 }
 </script>
