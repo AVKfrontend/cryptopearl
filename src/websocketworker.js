@@ -10,7 +10,6 @@ const url = `wss://streamer.cryptocompare.com/v2?api_key=${KEY}`
 //   if (wsconnection) {
 //     wsconnection.onmessage = (messageFromWS) => {
 //       messageFromWS = JSON.parse(messageFromWS.data)
-//       console.log(messageFromWS)
 //       port.postMessage(messageFromWS)
 //     }
 //   }
@@ -40,7 +39,6 @@ const wsconnection = new WebSocket(url)
 if (wsconnection) {
   wsconnection.onmessage = (messageFromWS) => {
     messageFromWS = JSON.parse(messageFromWS.data)
-    console.log(messageFromWS)
     postMessage(messageFromWS)
   }
 }

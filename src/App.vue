@@ -3,7 +3,8 @@
   <div class="container">
     <section>
       <AddTiker
-        :tikers = "this.tikers"
+        :tikers = "tikers"
+        :availableTikers = "['BTC', 'ETH', 'DOGE', 'SOL']"
         @tiker-add="tikerAdd"
         />
     </section>
@@ -206,14 +207,12 @@ export default {
       t = { tname: t, price: '-' }
       this.tikers = [t].concat(this.tikers)
       subscribeToPrice(t.tname, this.handlerNewPrice)
-      console.log(this.tikers)
       this.page = 1
     },
     tikerDel: function (t) {
       this.tikers = this.tikers.filter(el => el !== t)
       if (t.tname === this.active) this.active = ''
       unSubscribe(t.tname)
-      // if (this.tikers.length === 0) this.focusOnInput()
     }
   },
 

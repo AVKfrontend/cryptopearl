@@ -33,17 +33,12 @@
         <span  class="inline-flex items-center px-2 m-1 text-xs font-medium text-gray-800">
           Популярные:
         </span>
-        <span v-on:click="validateTiker('BTC')" class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-          BTC
-        </span>
-        <span v-on:click="validateTiker('ETH')" class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-          ETH
-        </span>
-        <span v-on:click="validateTiker('DOGE')" class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-          DOGE
-        </span>
-        <span v-on:click="validateTiker('SOL')" class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-          SOL
+        <span
+          v-for="aTiker of availableTikers"
+          :key="aTiker"
+          @:click="validateTiker(aTiker)"
+          class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
+          {{aTiker}}
         </span>
       </div>
       <p class="text-sm text-red-600">{{ errmes }}</p>
@@ -63,7 +58,8 @@ let fullList = []
 
 export default {
   props: {
-    tikers: Array
+    tikers: Array,
+    availableTikers: Array
   },
   emits: ['tiker-add'],
 
@@ -89,6 +85,21 @@ export default {
     hint () {
       const t = this.tiker === '' ? ' ' : this.tiker.toUpperCase()
       return fullList.filter(el => el.startsWith(t)).slice(0, 4)
+    },
+    suchTickerAlreadySelected () {
+      return this.tikers.filter(el => el.tname === this.tiker).length !== 0
+    },
+    noDataAboutCoin () {
+      return !fullList.find(el => el === this.tiker)
+    },
+    errorMesage () {
+      if (this.suchTickerAlreadySelected) {
+        return 'Такой тикер уже добавлен'
+      }
+      if (this.noDataAboutCoin) {
+        return 'Нет данных про такую монету'
+      }
+      return ' '
     }
   },
 
@@ -96,23 +107,22 @@ export default {
     validateTiker (t) {
       this.errReset()
       t = t.toUpperCase()
-      if (this.tikers.filter(el => el.tname === t).length === 0) {
-        if ((fullList.filter(el => el === t).length !== 0)) {
-          this.$emit('tiker-add', t)
-          this.tiker = ''
-        } else {
-          this.errmes = 'Нет данных про такую монету'
-        }
-      } else {
-        this.tiker = t
-        this.errmes = 'Такой тикер уже добавлен'
-      }
+      this.tiker = t
+      this.errmes = this.errorMesage
+      if (this.errmes !== ' ') return
+      this.$emit('tiker-add', t)
+      this.tiker = ''
     },
     focusOnInput () {
       this.$refs.tikerInput.focus()
     },
     errReset () {
       if (this.errmes !== ' ') this.errmes = ' '
+    }
+  },
+  watch: {
+    tikers (v) {
+      if (v.length === 0) this.focusOnInput()
     }
   }
 }
