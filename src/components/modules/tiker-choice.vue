@@ -45,7 +45,7 @@
     </div>
   </div>
   <AddButton
-    v-on:click="validateTiker(tiker)"
+    v-on:click-on-butt="validateTiker(tiker)"
     class="my-4"
     />
 </template>
@@ -54,14 +54,29 @@
 import AddButton from '../features/add-button.vue'
 import { getCoinList } from '@/coinlist'
 
-let fullList = []
+// let fullList = []
 
 export default {
+  fullList: [],
   props: {
-    tikers: Array,
-    availableTikers: Array
+    tikers: {
+      type: Array,
+      default () { return [] },
+      required: false
+    },
+    availableTikers: {
+      type: Array,
+      default () { return ['BTC', 'ETH'] },
+      required: true
+    }
   },
-  emits: ['tiker-add'],
+  emits: {
+    'tiker-add' (v) {
+      if (typeof (v) === 'string') {
+        return true
+      } else { return false }
+    }
+  },
 
   data () {
     return {
@@ -72,7 +87,7 @@ export default {
 
   mounted () {
     (async () => {
-      fullList = await getCoinList()
+      this.$options.fullList = await getCoinList()
     })()
     setTimeout(this.focusOnInput, 1500)
   },
@@ -84,13 +99,13 @@ export default {
   computed: {
     hint () {
       const t = this.tiker === '' ? ' ' : this.tiker.toUpperCase()
-      return fullList.filter(el => el.startsWith(t)).slice(0, 4)
+      return this.$options.fullList.filter(el => el.startsWith(t)).slice(0, 4)
     },
     suchTickerAlreadySelected () {
       return this.tikers.filter(el => el.tname === this.tiker).length !== 0
     },
     noDataAboutCoin () {
-      return !fullList.find(el => el === this.tiker)
+      return !this.$options.fullList.find(el => el === this.tiker)
     },
     errorMesage () {
       if (this.suchTickerAlreadySelected) {

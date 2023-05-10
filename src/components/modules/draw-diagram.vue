@@ -33,10 +33,20 @@ let diagramElementWidth
 
 export default {
   props: {
-    tiks: Array,
-    active: String
+    tiks: {
+      type: Array,
+      default () { return [] },
+      required: false
+    },
+    active: {
+      type: String,
+      default () { return '' },
+      required: false
+    }
   },
-  emits: ['active-del'],
+  emits: {
+    'active-del': null
+  },
 
   data () {
     return {
@@ -66,7 +76,7 @@ export default {
 
   methods: {
     culculateDiagramMaxElements () {
-      if (!this.tiks.length) return
+      if (!this.tiks.length > 0) return
       const diagramWidth = this.$refs.diagram[0].parentElement.clientWidth
       this.diagramMaxElements = diagramWidth / (diagramElementWidth ?? this.getdiagramElementWidth())
     },
