@@ -87,7 +87,7 @@ export default {
   },
 
   watch: {
-    tiks () {
+    bars () {
       if (this.diagramMaxElements === 0) nextTick(() => { this.culculateDiagramMaxElements() })
     }
   }

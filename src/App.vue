@@ -62,7 +62,7 @@
         <div
           v-for="card in pagedTikers"
           v-bind:key="card.tname"
-          @click="(active = card.tname, tiks = [])"
+          @click="activeSelect(card.tname)"
           :class="[active === card.tname ? 'border-4' : '']"
           class="overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
         >
@@ -79,7 +79,7 @@
           </div>
           <div class="w-full border-t border-gray-200"></div>
           <button
-            @:click.stop="tikerDel(card)"
+            @:click.stop="checkingTikerDel(card)"
             class="flex items-center justify-center font-medium w-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none"
           >
             <BasketSvg />Удалить
@@ -94,6 +94,15 @@
       @active-del="active = ''"
     />
   </div>
+  <ModalWindow
+    v-if="!!modalWindowOpened"
+    @consent-warn="tikerDel(tikers.find(el => el.tname === active))"
+    @close-modal="modalWindowClose()"
+  >
+    <template #warn-mesage>
+      {{ modalMesage }}
+    </template>
+  </ModalWindow>
 </div>
 </template>
 
@@ -102,9 +111,11 @@ import { subscribeToPrice, unSubscribe } from './api'
 import AddTiker from './components/modules/tiker-choice.vue'
 import BasketSvg from './components/atoms/busket_svg.vue'
 import DrawDiagram from './components/modules/draw-diagram.vue'
+import ModalWindow from './components/modules/modal-window.vue'
 
 export default {
   name: 'App',
+
   data () {
     return {
       tikers: [],
@@ -112,6 +123,7 @@ export default {
       page: 1,
       tikerPerPage: 3,
       active: '',
+      modalWindowOpened: 0,
       tiks: []
     }
   },
@@ -119,7 +131,8 @@ export default {
   components: {
     BasketSvg,
     AddTiker,
-    DrawDiagram
+    DrawDiagram,
+    ModalWindow
   },
 
   computed: {
@@ -135,6 +148,9 @@ export default {
     },
     tikersListParam () {
       return { filter: this.filter, page: this.page }
+    },
+    modalMesage () {
+      return `Накопленая история по паре ${this.active} - USD будет потеряна`
     }
   },
 
@@ -170,10 +186,25 @@ export default {
       subscribeToPrice(t.tname, this.handlerNewPrice)
       this.page = 1
     },
+    checkingTikerDel: function (t) {
+      (!this.modalWindowOpened && t.tname === this.active) ? this.modalWindowOpen() : this.tikerDel(t)
+    },
     tikerDel: function (t) {
       this.tikers = this.tikers.filter(el => el !== t)
       if (t.tname === this.active) this.active = ''
       unSubscribe(t.tname)
+      if (this.modalWindowOpened) this.modalWindowClose()
+    },
+    modalWindowOpen () {
+      this.modalWindowOpened = 1
+    },
+    modalWindowClose () {
+      this.modalWindowOpened = 0
+    },
+    activeSelect (tikerToSelect) {
+      if (this.active === tikerToSelect) return
+      this.active = tikerToSelect
+      this.tiks = []
     }
   },
 
