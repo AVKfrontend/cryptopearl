@@ -76,7 +76,7 @@ export default {
 
   methods: {
     culculateDiagramMaxElements () {
-      if (!this.tiks.length > 0) return
+      if (!this.tiks.length) return
       const diagramWidth = this.$refs.diagram[0].parentElement.clientWidth
       this.diagramMaxElements = diagramWidth / (diagramElementWidth ?? this.getdiagramElementWidth())
     },

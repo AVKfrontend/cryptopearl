@@ -91,27 +91,34 @@
     <DrawDiagram
       :active = "active"
       :tiks = "tiks"
-      @active-del="active = ''"
+      @active-del="activeUnSelect()"
     />
   </div>
   <ModalWindow
     v-if="!!modalWindowOpened"
-    @consent-warn="tikerDel(tikers.find(el => el.tname === active))"
     @close-modal="modalWindowClose()"
+    @confirm-action="tikerDel(tikers.find(el => el.tname === active))"
   >
     <template #warn-mesage>
       {{ modalMesage }}
+    </template>
+    <template #consent-area="modalOptions">
+      <ConsentArea
+        :parole="modalOptions.parole"
+        @consent-warn="modalOptions.action"
+      />
     </template>
   </ModalWindow>
 </div>
 </template>
 
 <script>
-import { subscribeToPrice, unSubscribe } from './api'
+import { subscribeToPrice, unSubscribe } from './api.js'
 import AddTiker from './components/modules/tiker-choice.vue'
 import BasketSvg from './components/atoms/busket_svg.vue'
 import DrawDiagram from './components/modules/draw-diagram.vue'
 import ModalWindow from './components/modules/modal-window.vue'
+import ConsentArea from './components/modules/consent-area.vue'
 
 export default {
   name: 'App',
@@ -132,6 +139,7 @@ export default {
     BasketSvg,
     AddTiker,
     DrawDiagram,
+    ConsentArea,
     ModalWindow
   },
 
@@ -187,11 +195,11 @@ export default {
       this.page = 1
     },
     checkingTikerDel: function (t) {
-      (!this.modalWindowOpened && t.tname === this.active) ? this.modalWindowOpen() : this.tikerDel(t)
+      (t.tname === this.active) ? this.modalWindowOpen() : this.tikerDel(t)
     },
     tikerDel: function (t) {
       this.tikers = this.tikers.filter(el => el !== t)
-      if (t.tname === this.active) this.active = ''
+      if (t.tname === this.active) this.activeUnSelect()
       unSubscribe(t.tname)
       if (this.modalWindowOpened) this.modalWindowClose()
     },
@@ -201,10 +209,13 @@ export default {
     modalWindowClose () {
       this.modalWindowOpened = 0
     },
+    activeUnSelect () {
+      this.active = ''
+      this.tiks = []
+    },
     activeSelect (tikerToSelect) {
       if (this.active === tikerToSelect) return
       this.active = tikerToSelect
-      this.tiks = []
     }
   },
 
