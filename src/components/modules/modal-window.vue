@@ -15,22 +15,26 @@
 <script>
 
 export default {
+  modalDelTikerOptions: null,
   parole: '123',
   props: [],
-  emits: {
-    'close-modal': null,
-    'confirm-action': null
-  },
+  emits: [],
   methods: {
+    hendlerUserAction () {
+      const modalPromise = new Promise((resolve, reject) => {
+        this.$options.modalDelTikerOptions = { resolve, reject }
+      })
+      return modalPromise
+    },
     keyHendler (event) {
       if (event.key !== 'Escape') return
       this.closeModal()
     },
     closeModal () {
-      this.$emit('close-modal')
+      this.$options.modalDelTikerOptions.resolve('cancel')
     },
     confirmAction () {
-      this.$emit('confirm-action')
+      this.$options.modalDelTikerOptions.resolve('confirm')
     }
   },
   mounted () {

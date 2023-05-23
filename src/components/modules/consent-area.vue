@@ -14,7 +14,7 @@
     <button
         type="button"
         class="modal__butt"
-        :disabled="confirmedParole"
+        :disabled="unConfirmedParole"
         @click="$emit('consent-warn')"
       >
         OK
@@ -36,7 +36,7 @@ export default {
     }
   },
   computed: {
-    confirmedParole () {
+    unConfirmedParole () {
       return this.ledParole !== this.parole
     },
     consentMesage () {

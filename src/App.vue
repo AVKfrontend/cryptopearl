@@ -95,17 +95,16 @@
     />
   </div>
   <ModalWindow
+    ref="modalDelTiker"
     v-if="!!modalWindowOpened"
-    @close-modal="modalWindowClose()"
-    @confirm-action="tikerDel(tikers.find(el => el.tname === active))"
   >
     <template #warn-mesage>
       {{ modalMesage }}
     </template>
-    <template #consent-area="modalOptions">
+    <template #consent-area="{ parole, action }">
       <ConsentArea
-        :parole="modalOptions.parole"
-        @consent-warn="modalOptions.action"
+        :parole="parole"
+        @consent-warn="action"
       />
     </template>
   </ModalWindow>
@@ -205,6 +204,18 @@ export default {
     },
     modalWindowOpen () {
       this.modalWindowOpened = 1
+      this.$nextTick(() => { this.modalDellTikerHendler() })
+    },
+    async modalDellTikerHendler () {
+      const modalDellTikerResult = await this.$refs.modalDelTiker.hendlerUserAction()
+      switch (modalDellTikerResult) {
+        case 'confirm':
+          this.tikerDel(this.tikers.find(el => el.tname === this.active))
+          break
+        case 'cancel':
+          this.modalWindowClose()
+          break
+      }
     },
     modalWindowClose () {
       this.modalWindowOpened = 0
