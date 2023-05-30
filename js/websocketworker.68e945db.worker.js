@@ -1,0 +1,2 @@
+(function(){const e="5~CCCAGG~",a="ff22f3e7002848a426b497013ca0accce8dca58176a61a63c9562b81093a4c2d",s=`wss://streamer.cryptocompare.com/v2?api_key=${a}`,t=new WebSocket(s);t&&(t.onmessage=e=>{e=JSON.parse(e.data),postMessage(e)}),onmessage=function(a){const s=a.data[0],c=a.data[1],n=a.data[2],o={};o.action=s,o.subs=[`${e}${c}~${n}`];const d=JSON.stringify(o);t.readyState!==WebSocket.OPEN?t.addEventListener("open",(()=>{t.send(d)}),{once:!0}):t.send(d)}})();
+//# sourceMappingURL=websocketworker.68e945db.worker.js.map
