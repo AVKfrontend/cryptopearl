@@ -109,6 +109,19 @@
     </template>
   </ModalWindow>
 </div>
+<footer id="footer" class="my-3">
+  <div class="mx-auto mt-auto container flex justify-around text-center flex-wrap">
+    <p>
+      Created by <a href="https://github.com/AVKfrontend" class="m-2 text-sm font-medium text-gray-700">AVKfrontend.</a>
+    </p>
+    <p>
+      Developed through <a href="https://ua.vuejs.org/" class="m-2 text-sm font-medium text-gray-700">Vue.js 3</a>
+    </p>
+    <p>
+      Prices provided <a href="https://www.cryptocompare.com/" class="m-2 text-sm font-medium text-gray-700">cryptocompare.com</a>
+    </p>
+  </div>
+</footer>
 </template>
 
 <script>
